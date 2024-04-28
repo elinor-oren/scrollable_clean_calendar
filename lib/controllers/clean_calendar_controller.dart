@@ -7,7 +7,7 @@ class CleanCalendarController extends ChangeNotifier {
   /// Obrigatory: The mininimum date to show
   final DateTime minDate;
 
-  /// Obrigatory: The maximum date to show
+  /// Obligatory: The maximum date to show
   final DateTime maxDate;
 
   /// If the range is enabled
@@ -37,7 +37,7 @@ class CleanCalendarController extends ChangeNotifier {
   /// The end of selected range
   final DateTime? endDateSelected;
 
-  /// An initial fucus date
+  /// An initial focus date
   final DateTime? initialFocusDate;
 
   late int weekdayEnd;
@@ -64,8 +64,13 @@ class CleanCalendarController extends ChangeNotifier {
     final x = weekdayStart - 1;
     weekdayEnd = x == 0 ? 7 : x;
 
-    DateTime currentDate = DateTime(minDate.year, minDate.month);
-    months.add(currentDate);
+    DateTime currentDate = maxDate;
+    while (
+        currentDate.isAfter(minDate) || currentDate.isAtSameMomentAs(minDate)) {
+      months.insert(
+          0, DateTime(currentDate.year, currentDate.month)); // Insert at start
+      currentDate = DateTime(currentDate.year, currentDate.month - 1);
+    }
 
     while (!(currentDate.year == maxDate.year &&
         currentDate.month == maxDate.month)) {
@@ -107,6 +112,25 @@ class CleanCalendarController extends ChangeNotifier {
     ];
 
     return daysOfWeek;
+  }
+
+  void initializeFocus() {
+    // Set initial focus to the provided initial focus date or today's date if none provided
+    DateTime focusDate = initialFocusDate ?? DateTime.now();
+    if (focusDate.isBefore(minDate) || focusDate.isAfter(maxDate)) {
+      focusDate = DateTime.now();
+    }
+    if (focusDate.isAfter(minDate) && focusDate.isBefore(maxDate)) {
+      jumpToMonth(date: focusDate);
+    }
+  }
+
+  void jumpToMonth({required DateTime date}) {
+    final monthIndex = months.indexWhere(
+        (month) => month.year == date.year && month.month == date.month);
+    if (monthIndex != -1) {
+      itemScrollController.jumpTo(index: monthIndex);
+    }
   }
 
   void onDayClick(DateTime date, {bool update = true}) {
@@ -207,15 +231,4 @@ class CleanCalendarController extends ChangeNotifier {
   /// * 0 aligns the left edge of the item with the left edge of the view
   /// * 1 aligns the left edge of the item with the right edge of the view.
   /// * 0.5 aligns the left edge of the item with the center of the view.
-  void jumpToMonth({required DateTime date, double alignment = 0}) {
-    if (!(date.year >= minDate.year &&
-        (date.year > minDate.year || date.month >= minDate.month) &&
-        date.year <= maxDate.year &&
-        (date.year < maxDate.year || date.month <= maxDate.month))) {
-      return;
-    }
-    final month =
-        ((date.year - minDate.year) * 12) - minDate.month + date.month;
-    itemScrollController.jumpTo(index: month, alignment: alignment);
-  }
 }
